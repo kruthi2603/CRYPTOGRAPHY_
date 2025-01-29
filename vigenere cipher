@@ -1,0 +1,61 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+// Function to encrypt the plaintext using Vigenère Cipher
+void vigenereEncrypt(char* plaintext, char* key) {
+    int i, j = 0;
+    int keyLength = strlen(key);
+    
+    for (i = 0; plaintext[i] != '\0'; i++) {
+        if (isalpha(plaintext[i])) {
+            char base = isupper(plaintext[i]) ? 'A' : 'a';
+            char keyChar = isupper(key[j]) ? key[j] : key[j] - 32;  // Handle case sensitivity of the key
+
+            plaintext[i] = (char)((((plaintext[i] - base) + (keyChar - base)) % 26) + base);
+            j = (j + 1) % keyLength;  // Move to the next character in the key
+        }
+    }
+}
+
+// Function to decrypt the ciphertext using Vigenère Cipher
+void vigenereDecrypt(char* ciphertext, char* key) {
+    int i, j = 0;
+    int keyLength = strlen(key);
+    
+    for (i = 0; ciphertext[i] != '\0'; i++) {
+        if (isalpha(ciphertext[i])) {
+            char base = isupper(ciphertext[i]) ? 'A' : 'a';
+            char keyChar = isupper(key[j]) ? key[j] : key[j] - 32;  // Handle case sensitivity of the key
+
+            ciphertext[i] = (char)((((ciphertext[i] - base) - (keyChar - base) + 26) % 26) + base);
+            j = (j + 1) % keyLength;  // Move to the next character in the key
+        }
+    }
+}
+
+int main() {
+    char text[100];
+    char key[50];
+
+    // Input plaintext and key
+    printf("Enter the text: ");
+    fgets(text, sizeof(text), stdin);
+    
+    printf("Enter the key: ");
+    fgets(key, sizeof(key), stdin);
+
+    // Remove newline characters from input
+    text[strcspn(text, "\n")] = '\0';
+    key[strcspn(key, "\n")] = '\0';
+
+    // Encryption
+    vigenereEncrypt(text, key);
+    printf("Encrypted Text: %s\n", text);
+
+    // Decryption
+    vigenereDecrypt(text, key);
+    printf("Decrypted Text: %s\n", text);
+
+    return 0;
+}
