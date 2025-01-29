@@ -1,108 +1,99 @@
 #include <stdio.h>
 #include <math.h>
-#include <stdlib.h>
 
-// Function to compute gcd (Greatest Common Divisor)
-int gcd(int a, int b) {
-    while (b != 0) {
-        int temp = b;
-        b = a % b;
-        a = temp;
+long long int gcd(long long int a, long long int b) {
+    if (b == 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+// Function to calculate (x^y) % p using iterative method
+long long int power(long long int x, long long int y, long long int p) {
+    long long int res = 1;
+    x = x % p;
+    while (y > 0) {
+        if (y & 1)
+            res = (res * x) % p;
+        y = y >> 1;
+        x = (x * x) % p;
     }
-    return a;
+    return res;
 }
 
-// Function to compute the modular inverse of a under modulo m using Extended Euclidean Algorithm
-int modInverse(int a, int m) {
-    int m0 = m, t, q;
-    int x0 = 0, x1 = 1;
-    
-    if (m == 1)
-        return 0;
-    
-    while (a > 1) {
-        q = a / m;
-        t = m;
-        
-        m = a % m;
-        a = t;
-        
-        t = x0;
-        x0 = x1 - q * x0;
-        x1 = t;
+// Function to find modulo inverse of a under modulo m
+long long int modInverse(long long int e, long long int phi) {
+    long long int t = 0, newT = 1;
+    long long int r = phi, newR = e;
+    while (newR != 0) {
+        long long int quotient = r / newR;
+        t = t - quotient * newT;
+        r = r - quotient * newR;
+        long long int temp = t;
+        t = newT;
+        newT = temp;
+        temp = r;
+        r = newR;
+        newR = temp;
     }
-    
-    if (x1 < 0)
-        x1 += m0;
-    
-    return x1;
+    if (r > 1)
+        return -1;  // No modular inverse
+    if (t < 0)
+        t = t + phi;
+    return t;
 }
 
-// Function to compute power of a number modulo n (a^b mod n)
-long long powerMod(long long a, long long b, long long n) {
-    long long result = 1;
-    a = a % n;
-    
-    while (b > 0) {
-        if (b % 2 == 1) {
-            result = (result * a) % n;
-        }
-        b = b >> 1;
-        a = (a * a) % n;
-    }
-    
-    return result;
+// Encrypt the plaintext message using RSA
+long long int encrypt(long long int plaintext, long long int e, long long int n) {
+    return power(plaintext, e, n);
 }
 
-// Function to encrypt the message using the public key (e, n)
-long long encrypt(long long m, int e, int n) {
-    return powerMod(m, e, n);
-}
-
-// Function to decrypt the message using the private key (d, n)
-long long decrypt(long long c, int d, int n) {
-    return powerMod(c, d, n);
+// Decrypt the ciphertext message using RSA
+long long int decrypt(long long int ciphertext, long long int d, long long int n) {
+    return power(ciphertext, d, n);
 }
 
 int main() {
-    int p, q, n, phi_n, e, d;
-    long long m, c;
+    // Select two prime numbers p and q
+    long long int p = 61; // Small prime number (in a real scenario, pick large primes)
+    long long int q = 53; // Small prime number
 
-    // Input two prime numbers p and q
-    printf("Enter two prime numbers p and q: ");
-    scanf("%d %d", &p, &q);
+    long long int n = p * q;  // n = p * q
+    long long int phi = (p - 1) * (q - 1);  // phi(n) = (p - 1) * (q - 1)
 
-    // Step 1: Calculate n = p * q
-    n = p * q;
+    // Select e (1 < e < phi(n)) and e must be coprime to phi(n)
+    long long int e = 17;  // Commonly used value for e
 
-    // Step 2: Calculate the totient (phi) of n: phi(n) = (p-1)*(q-1)
-    phi_n = (p - 1) * (q - 1);
+    // Calculate d (modular inverse of e mod phi(n))
+    long long int d = modInverse(e, phi);
 
-    // Step 3: Choose e such that 1 < e < phi(n) and gcd(e, phi(n)) = 1
-    // Simple approach: Try e = 3, 5, 7 until we find a valid one
-    e = 3;
-    while (gcd(e, phi_n) != 1) {
-        e += 2;
+    if (d == -1) {
+        printf("No modular inverse found, exiting.\n");
+        return 1;
     }
 
-    // Step 4: Calculate d, the modular inverse of e modulo phi(n)
-    d = modInverse(e, phi_n);
+    printf("Public key: (e = %lld, n = %lld)\n", e, n);
+    printf("Private key: (d = %lld, n = %lld)\n", d, n);
 
-    // Output the keys
-    printf("Public key: (e = %d, n = %d)\n", e, n);
-    printf("Private key: (d = %d, n = %d)\n", d, n);
+    // Example of encrypting and decrypting a word (converted to numbers)
+    // Let's take the word "HELLO" and convert it to numbers (ASCII values)
+    char message[] = "HELLO";
+    printf("Original message: %s\n", message);
+    printf("Encrypted message:\n");
 
-    // Step 5: Encrypt and Decrypt a message
-    printf("Enter a message (integer): ");
-    scanf("%lld", &m);
+    // Encrypt each character of the message
+    for (int i = 0; message[i] != '\0'; i++) {
+        long long int plaintext = (long long int)message[i];
+        long long int ciphertext = encrypt(plaintext, e, n);
+        printf("%c -> %lld\n", message[i], ciphertext);
+    }
 
-    // Encrypt the message using the public key (e, n)
-    c = encrypt(m, e, n);
-    printf("Encrypted message: %lld\n", c);
-
-    // Decrypt the message using the private key (d, n)
-    long long decryptedMessage = decrypt(c, d, n);
-    printf("Decrypted message: %lld\n", decryptedMessage);
+    // Decrypt each character of the encrypted message
+    printf("\nDecrypted message:\n");
+    for (int i = 0; message[i] != '\0'; i++) {
+        long long int encryptedChar = (long long int)message[i];
+        long long int decryptedChar = decrypt(encryptedChar, d, n);
+        printf("%c -> %lld\n", message[i], decryptedChar);
+    }
 
     return 0;
 }
